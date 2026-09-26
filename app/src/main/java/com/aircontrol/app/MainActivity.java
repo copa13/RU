@@ -2,8 +2,6 @@ package com.aircontrol.app;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothProfile;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -101,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
         tvRightPod.setBackground(createRoundedBackground(Color.parseColor("#1a1a2e"), 50));
         
         btContainer.addView(tvLeftPod);
-        btContainer.addView(tvLeftPod, 1); // Spacing
+        btContainer.addView(tvLeftPod, 1);
         btContainer.addView(tvRightPod);
         
         // Battery Display
@@ -195,10 +193,17 @@ public class MainActivity extends AppCompatActivity {
         mainLayout.addView(lvSensors);
         mainLayout.addView(customizeContainer);
         
+        // SET CONTENT VIEW (हे महत्वाचे आहे!)
         setContentView(mainLayout);
         
-        // Initialize
+        // Initialize Bluetooth
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (bluetoothAdapter == null) {
+            Toast.makeText(this, "Bluetooth not supported on this device", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // Initialize Sensors
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         
         List<Sensor> sensors = sensorManager.getSensorList(Sensor.TYPE_ALL);
@@ -218,11 +223,18 @@ public class MainActivity extends AppCompatActivity {
         
         lvDevices.setOnItemClickListener((parent, view, position, id) -> {
             if (connectedDevice != null) {
-                // Already connected, show customize options
                 customizeContainer.setVisibility(View.VISIBLE);
                 Toast.makeText(this, "Connected! Customize options below.", Toast.LENGTH_SHORT).show();
             }
         });
+        
+        // Request Permissions (हे महत्वाचे आहे!)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ActivityCompat.requestPermissions(this, new String[]{
+                android.Manifest.permission.BLUETOOTH_SCAN,
+                android.Manifest.permission.BLUETOOTH_CONNECT
+            }, 1);
+        }
     }
 
     void scanDevices() {
@@ -256,23 +268,20 @@ public class MainActivity extends AppCompatActivity {
                         deviceList.add(name + " - " + device.getAddress());
                         deviceAdapter.notifyDataSetChanged();
                         
-                        // Simulate connection (for demo)
+                        // Simulate connection
                         if (name.toLowerCase().contains("airpods") || name.toLowerCase().contains("air")) {
                             connectedDevice = device;
                             tvBTStatus.setText("Bluetooth: Connected to " + name);
                             tvBTStatus.setTextColor(Color.parseColor("#00ff88"));
                             
-                            // Change pod colors
                             tvLeftPod.setTextColor(Color.parseColor("#00ff88"));
                             tvLeftPod.setBackground(createRoundedBackground(Color.parseColor("#00ff8820"), 50));
                             tvRightPod.setTextColor(Color.parseColor("#00ff88"));
                             tvRightPod.setBackground(createRoundedBackground(Color.parseColor("#00ff8820"), 50));
                             
-                            // Show battery (simulated)
                             tvLeftBattery.setText("L: 85%");
                             tvRightBattery.setText("R: 90%");
                             
-                            // Show customize options
                             customizeContainer.setVisibility(View.VISIBLE);
                             
                             Toast.makeText(MainActivity.this, "Connected!", Toast.LENGTH_SHORT).show();
